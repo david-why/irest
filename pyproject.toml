@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "irest"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+fastapi = "^0.115.12"
+uvicorn = {extras = ["standard"], version = "^0.34.2"}
+pyobjc = "^11.0"
+
+[[tool.poetry.source]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+priority = "primary"
