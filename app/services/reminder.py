@@ -7,7 +7,7 @@ from AppKit import NSColor  # type: ignore
 from EventKit import EKCalendar, EKEntityTypeReminder, EKEventStore, EKReminder  # type: ignore
 from Foundation import NSURL, NSCalendar, NSDate, NSDateComponents, NSTimeZone  # type: ignore
 
-from app.models.calendar import Reminder, ReminderCreate, ReminderList, ReminderListCreate, Source
+from app.models.calendar import Reminder, ReminderCreate, ReminderList, ReminderListCreate, ReminderListUpdate, Source
 from app.models.common import RGBA
 
 
@@ -133,6 +133,19 @@ class ReminderService:
         calendar = self.store.calendarWithIdentifier_(id)
         if calendar is None:
             return None
+        return self._map_reminder_list(calendar)
+
+    def update_reminder_list(self, id: str, schema: ReminderListUpdate) -> ReminderList:
+        calendar = self.store.calendarWithIdentifier_(id)
+        if calendar is None:
+            raise ValueError("Calendar not found")
+        if schema.title is not None:
+            calendar.setTitle_(schema.title)
+        if schema.color is not None:
+            calendar.setColor_(_rgba_to_ns_color(schema.color))
+        success = self.store.saveCalendar_commit_error_(calendar, True, None)
+        if not success:
+            raise ValueError("Failed to save reminder list")
         return self._map_reminder_list(calendar)
 
     def get_reminders_in_lists(self, list_ids: list[str]) -> list[Reminder]:

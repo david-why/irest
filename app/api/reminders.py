@@ -5,6 +5,7 @@ from app.models.calendar import (
     ReminderCreate,
     ReminderList,
     ReminderListCreate,
+    ReminderListUpdate,
 )
 from app.services.reminder import ReminderService
 
@@ -32,6 +33,15 @@ def get_reminder_list(list_id: str) -> ReminderList:
     if reminder_list is None:
         raise HTTPException(status_code=404, detail="Reminder list not found")
     return reminder_list
+
+
+@router.patch("/lists/{list_id}")
+def update_reminder_list(list_id: str, reminder_list: ReminderListUpdate) -> ReminderList:
+    try:
+        updated_list = service.update_reminder_list(list_id, reminder_list)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return updated_list
 
 
 @router.get("/lists/{list_id}/reminders")

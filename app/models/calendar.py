@@ -50,6 +50,13 @@ class ReminderListCreate(BaseModel):
     source: Identified
 
 
+class ReminderListUpdate(BaseModel):
+    """A reminder list to be updated."""
+
+    title: str | None = None
+    color: RGBA | None = None
+
+
 class Reminder(BaseModel):
     """A reminder (EKReminder)."""
 
