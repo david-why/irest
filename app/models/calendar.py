@@ -6,6 +6,19 @@ from pydantic import BaseModel
 from app.models.common import RGBA, Identified
 
 
+class EntityType(IntEnum):
+    event = 0
+    reminder = 1
+
+
+class AuthorizationStatus(IntEnum):
+    not_determined = 0
+    restricted = 1
+    denied = 2
+    full_access = 3
+    write_only = 4
+
+
 class SourceType(IntEnum):
     local = 0
     exchange = 1

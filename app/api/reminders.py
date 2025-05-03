@@ -1,16 +1,24 @@
 from fastapi import APIRouter, HTTPException
 
 from app.models.calendar import (
+    AuthorizationStatus,
+    EntityType,
     Reminder,
     ReminderCreate,
     ReminderList,
     ReminderListCreate,
     ReminderListUpdate,
 )
-from app.services.reminder import ReminderService
+from app.services.reminder import CalendarService
 
 router = APIRouter(prefix="/reminder", tags=["Reminders"])
-service = ReminderService()
+service = CalendarService()
+
+
+@router.get("/status")
+def get_authorization_status() -> AuthorizationStatus:
+    status = service.get_authorization_status(EntityType.reminder)
+    return status
 
 
 @router.get("/lists")

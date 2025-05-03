@@ -7,7 +7,17 @@ from AppKit import NSColor  # type: ignore
 from EventKit import EKCalendar, EKEntityTypeReminder, EKEventStore, EKReminder  # type: ignore
 from Foundation import NSURL, NSCalendar, NSDate, NSDateComponents, NSTimeZone  # type: ignore
 
-from app.models.calendar import Reminder, ReminderCreate, ReminderList, ReminderListCreate, ReminderListUpdate, Source
+from app.exceptions import NotFoundException
+from app.models.calendar import (
+    AuthorizationStatus,
+    EntityType,
+    Reminder,
+    ReminderCreate,
+    ReminderList,
+    ReminderListCreate,
+    ReminderListUpdate,
+    Source,
+)
 from app.models.common import RGBA
 
 
@@ -61,19 +71,23 @@ def _rgba_to_ns_color(rgba: RGBA) -> Any:
     return NSColor.colorWithRed_green_blue_alpha_(rgba.r, rgba.g, rgba.b, rgba.a)
 
 
-class ReminderService:
+class CalendarService:
     def __init__(self):
         self.store = EKEventStore()
 
-    def request_access(self) -> bool:
+    def get_authorization_status(self, type: EntityType) -> AuthorizationStatus:
+        status = EKEventStore.authorizationStatusForEntityType_(type)
+        return AuthorizationStatus(status)
+
+    def request_access_to_reminders(self) -> bool:
         future = Future()
         self.store.requestFullAccessToRemindersWithCompletion_(
             lambda granted, error: future.set_result(granted)
         )
         return future.result()
 
-    def _get_ek_calendars(self):
-        return self.store.calendarsForEntityType_(EKEntityTypeReminder)
+    def _get_ek_calendars(self, type: int):
+        return self.store.calendarsForEntityType_()
 
     def _map_reminder_list(self, calendar) -> ReminderList:
         id = calendar.calendarIdentifier()
@@ -126,7 +140,7 @@ class ReminderService:
         )
 
     def get_reminder_lists(self) -> list[ReminderList]:
-        calendars = self._get_ek_calendars()
+        calendars = self._get_ek_calendars(EKEntityTypeReminder)
         return [self._map_reminder_list(calendar) for calendar in calendars]
 
     def get_reminder_list(self, id: str) -> ReminderList | None:
@@ -138,7 +152,7 @@ class ReminderService:
     def update_reminder_list(self, id: str, schema: ReminderListUpdate) -> ReminderList:
         calendar = self.store.calendarWithIdentifier_(id)
         if calendar is None:
-            raise ValueError("Calendar not found")
+            raise NotFoundException("Calendar not found")
         if schema.title is not None:
             calendar.setTitle_(schema.title)
         if schema.color is not None:
@@ -149,7 +163,7 @@ class ReminderService:
         return self._map_reminder_list(calendar)
 
     def get_reminders_in_lists(self, list_ids: list[str]) -> list[Reminder]:
-        calendars = self._get_ek_calendars()
+        calendars = self._get_ek_calendars(EKEntityTypeReminder)
         filtered_calendars = [
             calendar
             for calendar in calendars
@@ -175,7 +189,7 @@ class ReminderService:
     def create_reminder(self, list_id: str, schema: ReminderCreate):
         calendar = self.store.calendarWithIdentifier_(list_id)
         if calendar is None:
-            raise ValueError("Calendar not found")
+            raise NotFoundException("Calendar not found")
         reminder = EKReminder.reminderWithEventStore_(self.store)
         reminder.setCalendar_(calendar)
         reminder.setTitle_(schema.title)
@@ -198,7 +212,7 @@ class ReminderService:
     def create_reminder_list(self, schema: ReminderListCreate):
         source = self.store.sourceWithIdentifier_(schema.source.id)
         if source is None:
-            raise ValueError("Source not found")
+            raise NotFoundException("Source not found")
         calendar = EKCalendar.calendarForEntityType_eventStore_(
             EKEntityTypeReminder, self.store
         )
