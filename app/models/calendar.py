@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import IntEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from app.models.common import RGBA, Identified
 
@@ -77,7 +77,6 @@ class Reminder(BaseModel):
     title: str
     start_date: datetime | None
     due_date: datetime | None
-    is_completed: bool
     completion_date: datetime | None
     priority: int
     location: str | None
@@ -97,3 +96,20 @@ class ReminderCreate(BaseModel):
     location: str | None = None
     url: str | None = None
     notes: str | None = None
+    # TODO alarms
+    # TODO recurrence_rules
+
+
+class ReminderUpdate(BaseModel):
+    """A reminder to be updated."""
+
+    title: str | None = None
+    start_date: datetime | None = None
+    due_date: datetime | None = None
+    completion_date: datetime | None = None
+    priority: int | None = None
+    location: str | None = None
+    url: str | None = None
+    notes: str | None = None
+    # TODO alarms
+    # TODO recurrence_rules

@@ -21,3 +21,7 @@ poetry run python run.py
 ```
 
 This will start a development server on `http://localhost:8120`.
+
+## Documentation
+
+After starting the server, you can access the documentation at `http://localhost:8120/docs`. This will show an interactive API documentation where you can test the endpoints.

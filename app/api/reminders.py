@@ -8,6 +8,7 @@ from app.models.calendar import (
     ReminderList,
     ReminderListCreate,
     ReminderListUpdate,
+    ReminderUpdate,
 )
 from app.services.reminder import CalendarService
 
@@ -65,3 +66,20 @@ def create_reminder(list_id: str, reminder: ReminderCreate) -> Reminder:
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return created_reminder
+
+
+@router.get("/reminders/{reminder_id}")
+def get_reminder(reminder_id: str) -> Reminder:
+    reminder = service.get_reminder(reminder_id)
+    if reminder is None:
+        raise HTTPException(status_code=404, detail="Reminder not found")
+    return reminder
+
+
+@router.patch("/reminders/{reminder_id}")
+def update_reminder(reminder_id: str, reminder: ReminderUpdate) -> Reminder:
+    try:
+        updated_reminder = service.update_reminder(reminder_id, reminder)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return updated_reminder

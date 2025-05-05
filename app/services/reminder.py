@@ -16,6 +16,7 @@ from app.models.calendar import (
     ReminderList,
     ReminderListCreate,
     ReminderListUpdate,
+    ReminderUpdate,
     Source,
 )
 from app.models.common import RGBA
@@ -38,7 +39,9 @@ def _components_to_datetime(components):
     return datetime.fromtimestamp(date.timeIntervalSince1970(), tz=tzinfo)
 
 
-def _datetime_to_components(date: datetime) -> Any:
+def _datetime_to_components(date: datetime | None) -> Any | None:
+    if date is None:
+        return None
     # FIXME this always uses floating timezone
     date = date.astimezone()
     components = NSDateComponents()
@@ -87,7 +90,7 @@ class CalendarService:
         return future.result()
 
     def _get_ek_calendars(self, type: int):
-        return self.store.calendarsForEntityType_()
+        return self.store.calendarsForEntityType_(type)
 
     def _map_reminder_list(self, calendar) -> ReminderList:
         id = calendar.calendarIdentifier()
@@ -117,7 +120,6 @@ class CalendarService:
         title = reminder.title()
         start_date = _components_to_datetime(reminder.startDateComponents())
         due_date = _components_to_datetime(reminder.dueDateComponents())
-        is_completed = reminder.isCompleted()
         completion_date = _date_to_datetime(reminder.completionDate())
         priority = reminder.priority()
         location = reminder.location()
@@ -131,7 +133,6 @@ class CalendarService:
             title=title,
             start_date=start_date,
             due_date=due_date,
-            is_completed=is_completed,
             completion_date=completion_date,
             priority=priority,
             location=location,
@@ -203,6 +204,31 @@ class CalendarService:
         if schema.url is not None:
             reminder.setURL_(NSURL.URLWithString_(schema.url))
         if schema.notes is not None:
+            reminder.setNotes_(schema.notes)
+        success = self.store.saveReminder_commit_error_(reminder, True, None)
+        if not success:
+            raise ValueError("Failed to save reminder")
+        return self._map_reminder(reminder)
+
+    def update_reminder(self, id: str, schema: ReminderUpdate) -> Reminder:
+        reminder = self.store.calendarItemWithIdentifier_(id)
+        if reminder is None:
+            raise NotFoundException("Reminder not found")
+        if schema.title is not None:
+            reminder.setTitle_(schema.title)
+        if 'start_date' in schema.model_fields_set:
+            reminder.setStartDateComponents_(_datetime_to_components(schema.start_date))
+        if 'due_date' in schema.model_fields_set:
+            reminder.setDueDateComponents_(_datetime_to_components(schema.due_date))
+        if 'completion_date' in schema.model_fields_set:
+            reminder.setCompletionDate_(_datetime_to_date(schema.completion_date))
+        if schema.priority is not None:
+            reminder.setPriority_(schema.priority)
+        if 'location' in schema.model_fields_set:
+            reminder.setLocation_(schema.location)
+        if 'url' in schema.model_fields_set:
+            reminder.setURL_(NSURL.URLWithString_(schema.url))
+        if 'notes' in schema.model_fields_set:
             reminder.setNotes_(schema.notes)
         success = self.store.saveReminder_commit_error_(reminder, True, None)
         if not success:
