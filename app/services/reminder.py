@@ -7,7 +7,7 @@ from AppKit import NSColor  # type: ignore
 from EventKit import EKCalendar, EKEntityTypeReminder, EKEventStore, EKReminder  # type: ignore
 from Foundation import NSURL, NSCalendar, NSDate, NSDateComponents, NSTimeZone  # type: ignore
 
-from app.exceptions import NotFoundException
+from app.exceptions import NotFoundException, ObjCException
 from app.models.calendar import (
     AuthorizationStatus,
     EntityType,
@@ -158,9 +158,9 @@ class CalendarService:
             calendar.setTitle_(schema.title)
         if schema.color is not None:
             calendar.setColor_(_rgba_to_ns_color(schema.color))
-        success = self.store.saveCalendar_commit_error_(calendar, True, None)
+        success, error = self.store.saveCalendar_commit_error_(calendar, True, None)
         if not success:
-            raise ValueError("Failed to save reminder list")
+            raise ObjCException(error, "Failed to save calendar")
         return self._map_reminder_list(calendar)
 
     def get_reminders_in_lists(self, list_ids: list[str]) -> list[Reminder]:
@@ -205,9 +205,9 @@ class CalendarService:
             reminder.setURL_(NSURL.URLWithString_(schema.url))
         if schema.notes is not None:
             reminder.setNotes_(schema.notes)
-        success = self.store.saveReminder_commit_error_(reminder, True, None)
+        success, error = self.store.saveReminder_commit_error_(reminder, True, None)
         if not success:
-            raise ValueError("Failed to save reminder")
+            raise ObjCException(error, "Failed to save reminder")
         return self._map_reminder(reminder)
 
     def update_reminder(self, id: str, schema: ReminderUpdate) -> Reminder:
@@ -230,9 +230,9 @@ class CalendarService:
             reminder.setURL_(NSURL.URLWithString_(schema.url))
         if 'notes' in schema.model_fields_set:
             reminder.setNotes_(schema.notes)
-        success = self.store.saveReminder_commit_error_(reminder, True, None)
+        success, error = self.store.saveReminder_commit_error_(reminder, True, None)
         if not success:
-            raise ValueError("Failed to save reminder")
+            raise ObjCException(error, "Failed to save reminder")
         return self._map_reminder(reminder)
 
     def create_reminder_list(self, schema: ReminderListCreate):
@@ -246,7 +246,7 @@ class CalendarService:
         if schema.color is not None:
             calendar.setColor_(_rgba_to_ns_color(schema.color))
         calendar.setSource_(source)
-        success = self.store.saveCalendar_commit_error_(calendar, True, None)
+        success, error = self.store.saveCalendar_commit_error_(calendar, True, None)
         if not success:
-            raise ValueError("Failed to save reminder list")
+            raise ObjCException(error, "Failed to save calendar")
         return self._map_reminder_list(calendar)

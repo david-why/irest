@@ -8,6 +8,7 @@ python = "^3.12"
 fastapi = {extras = ["standard"], version = "^0.115.12"}
 uvicorn = {extras = ["standard"], version = "^0.34.2"}
 pyobjc = "^11.0"
+python-dotenv = "^1.1.0"
 
 [[tool.poetry.source]]
 name = "tsinghua"
